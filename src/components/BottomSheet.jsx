@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Target, Lightbulb, BarChart2, ChevronLeft, Server, Shield, Zap, Code } from 'lucide-react';
+import { ChevronRight, Target, Lightbulb, BarChart2, ChevronLeft, Server, Shield, Zap, Code, Cloud, Database, Cpu } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -9,17 +9,49 @@ function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-// 1. DATA STRUCTURE: Added 'details' array to each item
+// --- 1. DEFINE HELPER COMPONENTS FIRST (Fixes ReferenceError) ---
+const Box = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+);
+
+// --- 2. DATA STRUCTURE (Recursive) ---
 const menuItems = [
+  {
+    id: 'arch',
+    icon: <Server className="w-6 h-6" />,
+    title: 'System Architecture',
+    subtitle: 'Scalable system design and planning',
+    children: [
+      {
+        id: 'cloud',
+        icon: <Cloud className="w-6 h-6" />,
+        title: 'Cloud Infrastructure',
+        subtitle: 'AWS, Azure & Google Cloud setup',
+        children: [
+           { id: 'aws', icon: <Cpu className="w-5 h-5" />, title: 'AWS Solutions', subtitle: 'EC2, Lambda, S3' },
+           { id: 'azure', icon: <Database className="w-5 h-5" />, title: 'Azure Managed', subtitle: 'Enterprise integration' },
+        ]
+      },
+      {
+        id: 'micro',
+        icon: <Code className="w-6 h-6" />,
+        title: 'Microservices',
+        subtitle: 'Containerization and orchestration',
+        children: [
+            { id: 'k8s', icon: <Server className="w-5 h-5" />, title: 'Kubernetes', subtitle: 'Cluster management' },
+            { id: 'docker', icon: <Box className="w-5 h-5" />, title: 'Docker', subtitle: 'Container workflows' }
+        ]
+      }
+    ]
+  },
   {
     id: 'strategy',
     icon: <Target className="w-6 h-6" />,
     title: 'Data Strategy',
     subtitle: 'Data governance and strategy development',
-    details: [
-      { icon: <Code className="w-5 h-5" />, title: 'Governance Protocols', subtitle: 'Compliance and standards' },
-      { icon: <Shield className="w-5 h-5" />, title: 'Security Framework', subtitle: 'End-to-end protection' },
-      { icon: <Zap className="w-5 h-5" />, title: 'Optimization', subtitle: 'Workflow efficiency' },
+    children: [
+      { id: 'gov', icon: <Shield className="w-6 h-6" />, title: 'Governance Protocols', subtitle: 'Compliance and standards' },
+      { id: 'opt', icon: <Zap className="w-6 h-6" />, title: 'Optimization', subtitle: 'Workflow efficiency' },
     ]
   },
   {
@@ -27,52 +59,43 @@ const menuItems = [
     icon: <Lightbulb className="w-6 h-6" />,
     title: 'Advanced Analytics',
     subtitle: 'Machine learning and predictive analytics',
-    details: [
-      { icon: <Server className="w-5 h-5" />, title: 'Predictive Modeling', subtitle: 'Forecast future trends' },
-      { icon: <BarChart2 className="w-5 h-5" />, title: 'Real-time Reporting', subtitle: 'Live dashboards' },
-    ]
-  },
-  {
-    id: 'bi',
-    icon: <BarChart2 className="w-6 h-6" />,
-    title: 'Business Intelligence',
-    subtitle: 'BI platform implementation and optimization',
-    details: [
-      { icon: <Target className="w-5 h-5" />, title: 'Market Analysis', subtitle: 'Competitor tracking' },
-      { icon: <Lightbulb className="w-5 h-5" />, title: 'Consumer Insights', subtitle: 'Behavioral patterns' },
+    children: [
+      { id: 'pred', icon: <BarChart2 className="w-6 h-6" />, title: 'Predictive Modeling', subtitle: 'Forecast future trends' },
     ]
   },
 ];
 
 const BottomSheet = ({ open, onOpenChange }) => {
-  // 2. STATE: Track which item is currently selected (null = Main View)
-  const [selectedItem, setSelectedItem] = useState(null);
+  // HISTORY STACK: Stores the path of clicked items. [] = Root.
+  const [history, setHistory] = useState([]);
+  const [direction, setDirection] = useState(1); // 1 = forward, -1 = back
 
-  // Reset navigation when sheet closes
+  // Reset state when closing
   useEffect(() => {
-    if (!open) setTimeout(() => setSelectedItem(null), 300);
+    if (!open) {
+      setTimeout(() => setHistory([]), 300);
+    }
   }, [open]);
 
-  // 3. HANDLER: Smart Back Button
-  const handleBack = () => {
-    if (selectedItem) {
-      setSelectedItem(null); // Go back to main list
-    } else {
-      onOpenChange(false); // Close the sheet
+  // Derived state: What list to show?
+  const currentView = history.length === 0 
+    ? menuItems 
+    : history[history.length - 1].children || [];
+
+  const handleNext = (item) => {
+    if (item.children) {
+      setDirection(1);
+      setHistory([...history, item]);
     }
   };
 
-  // 4. ANIMATION VARIANTS (iOS Slide Effect)
-  const slideVariants = {
-    initial: (isDeep) => ({
-      x: isDeep ? '100%' : '-100%', // Slide in from right if going deep, left if going back
-      opacity: 0
-    }),
-    animate: { x: '0%', opacity: 1 },
-    exit: (isDeep) => ({
-      x: isDeep ? '-100%' : '100%', // Slide out to left if going deep, right if going back
-      opacity: 0
-    })
+  const handleBack = () => {
+    if (history.length > 0) {
+      setDirection(-1);
+      setHistory(history.slice(0, -1)); // Pop last item
+    } else {
+      onOpenChange(false); // Close sheet
+    }
   };
 
   return (
@@ -98,7 +121,7 @@ const BottomSheet = ({ open, onOpenChange }) => {
                   "w-full max-w-[500px] mx-auto",
                   "bg-white rounded-t-[30px]",
                   "shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]",
-                  "flex flex-col max-h-[90vh] outline-none overflow-hidden" // overflow-hidden is key for sliding
+                  "flex flex-col max-h-[90vh] outline-none overflow-hidden"
                 )}
                 initial={{ y: '100%' }}
                 animate={{ y: '0%' }}
@@ -112,9 +135,9 @@ const BottomSheet = ({ open, onOpenChange }) => {
                 }}
               >
                 <Dialog.Title className="sr-only">Menu</Dialog.Title>
-                <Dialog.Description className="sr-only">Navigation options</Dialog.Description>
+                <Dialog.Description className="sr-only">Navigation</Dialog.Description>
 
-                {/* STATIC HEADER (Stays put while content slides) */}
+                {/* HEADER */}
                 <div className="flex-none pt-3 px-6 pb-2 z-10 bg-white">
                   <div className="w-full flex justify-center mb-3">
                     <div className="w-12 h-1.5 bg-gray-300 rounded-full opacity-50 cursor-grab active:cursor-grabbing" />
@@ -125,91 +148,63 @@ const BottomSheet = ({ open, onOpenChange }) => {
                     className="flex items-center text-gray-500 font-medium text-[15px] -ml-2 hover:text-gray-900 transition-colors"
                   >
                     <ChevronLeft className="w-5 h-5 mr-0.5" />
-                    {selectedItem ? 'Back' : 'Close'}
+                    Back
                   </button>
                 </div>
 
-                {/* DYNAMIC CONTENT AREA */}
+                {/* CONTENT AREA */}
                 <div className="flex-1 overflow-y-auto px-6 pb-10 no-scrollbar relative">
-                  <AnimatePresence mode="wait" custom={!!selectedItem}>
-                    
-                    {/* VIEW 1: MAIN MENU */}
-                    {!selectedItem ? (
-                      <motion.div
-                        key="main-menu"
-                        custom={false} // Direction indicator
-                        variants={slideVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        transition={{ type: "tween", ease: "easeInOut", duration: 0.25 }}
-                        className="w-full"
-                      >
-                         {/* <h2 className="text-2xl font-bold text-gray-900 mb-6 mt-2">Services</h2> */}
-                        {menuItems.map((item, index) => (
-                          <div key={item.id}>
-                            <button 
-                              onClick={() => setSelectedItem(item)} // CLICK TRIGGER
-                              className="group flex items-center w-full py-4 text-left active:scale-[0.98] transition-all"
-                            >
-                              <div className="flex-shrink-0 text-gray-600 mr-4 group-hover:text-blue-600 transition-colors">
-                                {item.icon}
-                              </div>
-                              <div className="flex-1 min-w-0 pr-2">
-                                <h3 className="text-[16px] font-semibold text-gray-900 leading-tight truncate">
-                                  {item.title}
-                                </h3>
+                  <AnimatePresence mode="popLayout" custom={direction}>
+                    <motion.div
+                      key={history.length}
+                      custom={direction}
+                      variants={{
+                        enter: (dir) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
+                        center: { x: 0, opacity: 1 },
+                        exit: (dir) => ({ x: dir > 0 ? '-100%' : '100%', opacity: 0 }),
+                      }}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      transition={{ type: "spring", bounce: 0, duration: 0.35 }}
+                      className="w-full"
+                    >
+                      {currentView.map((item, index) => (
+                        <div key={item.id || index}>
+                          <button 
+                            onClick={() => handleNext(item)}
+                            className="group flex items-center w-full py-4 text-left px-3 -mx-3 rounded-xl hover:bg-gray-100 active:scale-[0.98] transition-all duration-200"
+                          >
+                            <div className="flex-shrink-0 text-gray-600 mr-4 group-hover:text-blue-600 transition-colors">
+                              {item.icon}
+                            </div>
+                            <div className="flex-1 min-w-0 pr-2">
+                              <h3 className="text-[16px] font-semibold text-gray-900 leading-tight truncate">
+                                {item.title}
+                              </h3>
+                              {item.subtitle && (
                                 <p className="text-[13px] text-gray-400 leading-snug mt-1 line-clamp-2">
                                   {item.subtitle}
                                 </p>
-                              </div>
-                              <ChevronRight className="flex-shrink-0 w-4 h-4 text-gray-300 ml-2" />
-                            </button>
-                            {index < menuItems.length - 1 && <div className="ml-[40px] h-px bg-gray-100" />}
-                          </div>
-                        ))}
-                      </motion.div>
-                    ) : (
-                      /* VIEW 2: DETAILS (NESTED) */
-                      <motion.div
-                        key="details-view"
-                        custom={true} // Direction indicator
-                        variants={slideVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        transition={{ type: "tween", ease: "easeInOut", duration: 0.25 }}
-                        className="w-full"
-                      >
-                        {/* Title of selected section
-                        <div className="mb-6 mt-2">
-                           <h2 className="text-2xl font-bold text-gray-900">{selectedItem.title}</h2>
-                           <p className="text-gray-500 text-sm mt-1">Specific solutions available</p>
-                        </div> */}
-
-                        {/* Detail Items */}
-                        {selectedItem.details.map((detail, idx) => (
-                          <div key={idx} className="mb-4">
-                            <div className="flex items-center w-full p-4 bg-gray-50 rounded-2xl">
-                              <div className="flex-shrink-0 text-blue-600 mr-4 bg-white p-2 rounded-full shadow-sm">
-                                {detail.icon}
-                              </div>
-                              <div className="flex-1">
-                                <h3 className="text-[15px] font-semibold text-gray-900">
-                                  {detail.title}
-                                </h3>
-                                <p className="text-[13px] text-gray-500 mt-0.5">
-                                  {detail.subtitle}
-                                </p>
-                              </div>
+                              )}
                             </div>
-                          </div>
-                        ))}
-                      </motion.div>
-                    )}
-
+                            
+                            {/* Chevron only shows if nested items exist */}
+                            {item.children && (
+                              <ChevronRight className="flex-shrink-0 w-4 h-4 text-gray-300 ml-2" />
+                            )}
+                          </button>
+                          
+                          {/* Separator line */}
+                          {index < currentView.length - 1 && (
+                            <div className="ml-[52px] h-px bg-gray-100" />
+                          )}
+                        </div>
+                      ))}
+                    </motion.div>
                   </AnimatePresence>
                 </div>
+
               </motion.div>
             </Dialog.Content>
           </Dialog.Portal>
