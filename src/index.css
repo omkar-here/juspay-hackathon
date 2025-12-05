@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  @apply bg-gray-200 antialiased font-sans;
+  @apply bg-white antialiased font-sans;
   /* Center everything for the demo */
   display: flex;
   justify-content: center;
