@@ -1,21 +1,17 @@
-import React, { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Target, Lightbulb, BarChart2, ChevronLeft, Server, Shield, Zap, Code, Cloud, Database, Cpu } from 'lucide-react';
 import { clsx } from 'clsx';
+import { AnimatePresence, motion } from 'framer-motion';
+import { BarChart2, Box, ChevronLeft, ChevronRight, Cloud, Code, Columns, Cpu, Database, Eye, FileCode, FileJson, FileText, Folder, GitBranch, Globe, Image, Layout, LayoutGrid, Lightbulb, List, Lock, Server, Settings, Shield, Target, Terminal, Zap } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { twMerge } from 'tailwind-merge';
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-// --- 1. DEFINE HELPER COMPONENTS FIRST (Fixes ReferenceError) ---
-const Box = (props) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-);
 
-// --- 2. DATA STRUCTURE (Recursive) ---
 const menuItems = [
+  // --- SECTION 1: SERVICES & ARCHITECTURE ---
   {
     id: 'arch',
     icon: <Server className="w-6 h-6" />,
@@ -30,6 +26,7 @@ const menuItems = [
         children: [
            { id: 'aws', icon: <Cpu className="w-5 h-5" />, title: 'AWS Solutions', subtitle: 'EC2, Lambda, S3' },
            { id: 'azure', icon: <Database className="w-5 h-5" />, title: 'Azure Managed', subtitle: 'Enterprise integration' },
+           { id: 'gcp', icon: <Globe className="w-5 h-5" />, title: 'Google Cloud', subtitle: 'BigQuery & AI' },
         ]
       },
       {
@@ -39,18 +36,94 @@ const menuItems = [
         subtitle: 'Containerization and orchestration',
         children: [
             { id: 'k8s', icon: <Server className="w-5 h-5" />, title: 'Kubernetes', subtitle: 'Cluster management' },
-            { id: 'docker', icon: <Box className="w-5 h-5" />, title: 'Docker', subtitle: 'Container workflows' }
+            { id: 'docker', icon: <Box className="w-5 h-5" />, title: 'Docker', subtitle: 'Container workflows' },
+            { id: 'mesh', icon: <GitBranch className="w-5 h-5" />, title: 'Service Mesh', subtitle: 'Istio & Linkerd' }
         ]
       }
     ]
   },
+
+  // --- SECTION 2: FILE SYSTEM (FILES & FOLDERS) ---
+  {
+    id: 'project-root',
+    icon: <Folder className="w-6 h-6" />,
+    title: 'Project Files',
+    subtitle: 'Source code and assets',
+    children: [
+      {
+        id: 'src-folder',
+        icon: <Folder className="w-6 h-6 text-blue-500" />,
+        title: 'src',
+        subtitle: 'Source directory',
+        children: [
+          { 
+            id: 'components', 
+            icon: <Folder className="w-5 h-5 text-blue-400" />, 
+            title: 'components', 
+            subtitle: 'UI Building blocks',
+            children: [
+               { id: 'btn-tsx', icon: <FileCode className="w-4 h-4 text-yellow-500" />, title: 'Button.tsx', subtitle: 'TypeScript Component' },
+               { id: 'nav-tsx', icon: <FileCode className="w-4 h-4 text-yellow-500" />, title: 'Navbar.tsx', subtitle: 'TypeScript Component' }
+            ]
+          },
+          { id: 'utils-ts', icon: <FileCode className="w-5 h-5 text-blue-300" />, title: 'helpers.ts', subtitle: 'Utility functions' },
+          { id: 'styles-css', icon: <FileCode className="w-5 h-5 text-pink-400" />, title: 'global.css', subtitle: 'Stylesheet' },
+        ]
+      },
+      {
+        id: 'assets-folder',
+        icon: <Folder className="w-6 h-6 text-green-500" />,
+        title: 'assets',
+        subtitle: 'Static media',
+        children: [
+          { id: 'logo-png', icon: <Image className="w-5 h-5 text-purple-500" />, title: 'logo.png', subtitle: 'Brand image' },
+          { id: 'hero-jpg', icon: <Image className="w-5 h-5 text-purple-500" />, title: 'background.jpg', subtitle: 'Hero banner' },
+        ]
+      },
+      {
+        id: 'config-files',
+        icon: <Settings className="w-6 h-6" />,
+        title: 'Configuration',
+        subtitle: 'Environment setups',
+        children: [
+          { id: 'pkg-json', icon: <FileJson className="w-5 h-5 text-red-400" />, title: 'package.json', subtitle: 'Dependencies' },
+          { id: 'env-file', icon: <FileText className="w-5 h-5 text-gray-500" />, title: '.env.local', subtitle: 'Secrets' },
+        ]
+      }
+    ]
+  },
+
+  // --- SECTION 3: MULTIPLE VIEWS & LAYOUTS ---
+  {
+    id: 'views',
+    icon: <Layout className="w-6 h-6" />,
+    title: 'Interface Views',
+    subtitle: 'Manage layout preferences',
+    children: [
+      { id: 'kanban', icon: <Columns className="w-6 h-6" />, title: 'Kanban Board', subtitle: 'Drag and drop workflow' },
+      { id: 'grid', icon: <LayoutGrid className="w-6 h-6" />, title: 'Grid View', subtitle: 'Card based layout' },
+      { id: 'table', icon: <List className="w-6 h-6" />, title: 'List View', subtitle: 'Detailed data rows' },
+      { id: 'terminal', icon: <Terminal className="w-6 h-6" />, title: 'Console', subtitle: 'System logs & output' },
+    ]
+  },
+
+  // --- SECTION 4: STRATEGY & ANALYTICS ---
   {
     id: 'strategy',
     icon: <Target className="w-6 h-6" />,
     title: 'Data Strategy',
     subtitle: 'Data governance and strategy development',
     children: [
-      { id: 'gov', icon: <Shield className="w-6 h-6" />, title: 'Governance Protocols', subtitle: 'Compliance and standards' },
+      { 
+        id: 'security-gov', 
+        icon: <Shield className="w-6 h-6" />, 
+        title: 'Security Protocols', 
+        subtitle: 'Compliance and standards',
+        children: [
+            { id: 'audit', icon: <Lock className="w-5 h-5" />, title: 'Access Control', subtitle: 'RBAC & IAM' },
+            { id: 'pen-test', icon: <Eye className="w-5 h-5" />, title: 'Penetration Testing', subtitle: 'Vulnerability scans' }
+        ]
+      },
       { id: 'opt', icon: <Zap className="w-6 h-6" />, title: 'Optimization', subtitle: 'Workflow efficiency' },
     ]
   },
@@ -113,7 +186,7 @@ const BottomSheet = ({ open, onOpenChange }) => {
                 onClick={() => onOpenChange(false)}
               />
             </Dialog.Overlay>
-
+git
             <Dialog.Content asChild>
               <motion.div
                 className={cn(
