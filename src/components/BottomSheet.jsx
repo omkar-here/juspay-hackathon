@@ -191,7 +191,7 @@ git
               <motion.div
                 className={cn(
                   "fixed bottom-0 left-0 right-0 z-50",
-                  "w-full max-w-[500px] mx-auto",
+                  "w-full  mx-auto",
                   "bg-white rounded-t-[30px]",
                   "shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]",
                   "flex flex-col max-h-[90vh] outline-none overflow-hidden"
